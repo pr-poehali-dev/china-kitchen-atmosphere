@@ -5,9 +5,24 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
+import CartSidebar from '@/components/CartSidebar';
+import ImageGallery from '@/components/ImageGallery';
+import FloatingParticles from '@/components/FloatingParticles';
+import AnimatedDragon from '@/components/AnimatedDragon';
+
+interface CartItem {
+  id: string;
+  name: string;
+  price: string;
+  quantity: number;
+  image: string;
+}
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState('home');
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState('Все');
 
   const menuItems = [
     { name: 'Утка по-пекински', price: '2890₽', description: 'Традиционное блюдо с хрустящей корочкой', image: '/img/0c431847-b69b-4038-a808-47714b4e6c17.jpg', category: 'Основные блюда' },
@@ -24,8 +39,57 @@ const Index = () => {
     element?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const addToCart = (item: any) => {
+    const existingItem = cartItems.find(cartItem => cartItem.id === item.name);
+    if (existingItem) {
+      updateCartQuantity(existingItem.id, existingItem.quantity + 1);
+    } else {
+      setCartItems([...cartItems, {
+        id: item.name,
+        name: item.name,
+        price: item.price,
+        quantity: 1,
+        image: item.image
+      }]);
+    }
+    setIsCartOpen(true);
+  };
+
+  const updateCartQuantity = (id: string, quantity: number) => {
+    if (quantity === 0) {
+      removeFromCart(id);
+    } else {
+      setCartItems(cartItems.map(item => 
+        item.id === id ? { ...item, quantity } : item
+      ));
+    }
+  };
+
+  const removeFromCart = (id: string) => {
+    setCartItems(cartItems.filter(item => item.id !== id));
+  };
+
+  const getCartItemsCount = () => {
+    return cartItems.reduce((total, item) => total + item.quantity, 0);
+  };
+
+  const filteredMenuItems = selectedCategory === 'Все' 
+    ? menuItems 
+    : menuItems.filter(item => item.category === selectedCategory);
+
+  const galleryImages = [
+    '/img/795b2b07-b5cb-4fd9-8173-57cf4277880f.jpg',
+    '/img/0c431847-b69b-4038-a808-47714b4e6c17.jpg',
+    '/img/67a335d2-f54d-48fb-9229-c4a3ff55345d.jpg',
+    '/img/795b2b07-b5cb-4fd9-8173-57cf4277880f.jpg',
+    '/img/0c431847-b69b-4038-a808-47714b4e6c17.jpg',
+    '/img/67a335d2-f54d-48fb-9229-c4a3ff55345d.jpg'
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-chinese-dark to-black text-white">
+    <div className="min-h-screen bg-gradient-to-b from-black via-chinese-dark to-black text-white relative overflow-x-hidden">
+      <FloatingParticles />
+      
       {/* Navigation */}
       <nav className="fixed top-0 w-full bg-black/80 backdrop-blur-md z-50 border-b border-chinese-red/20">
         <div className="container mx-auto px-4 py-4">
@@ -56,8 +120,17 @@ const Index = () => {
                 </button>
               ))}
             </div>
-            <Button className="bg-chinese-red hover:bg-chinese-red/80 text-white">
-              Заказать
+            <Button 
+              className="bg-chinese-red hover:bg-chinese-red/80 text-white relative"
+              onClick={() => setIsCartOpen(true)}
+            >
+              <Icon name="ShoppingCart" size={16} className="mr-2" />
+              Корзина
+              {getCartItemsCount() > 0 && (
+                <Badge className="absolute -top-2 -right-2 bg-chinese-gold text-black text-xs animate-bounce-in">
+                  {getCartItemsCount()}
+                </Badge>
+              )}
             </Button>
           </div>
         </div>
@@ -72,7 +145,11 @@ const Index = () => {
           className="absolute inset-0 w-full h-full object-cover opacity-30 animate-float"
         />
         <div className="relative z-10 text-center px-4 animate-fade-in">
-          <div className="text-6xl mb-4 animate-glow">🐉☁️</div>
+          <div className="relative mb-4">
+            <div className="text-6xl animate-glow">🐉☁️</div>
+            <AnimatedDragon size="small" className="top-0 left-10" />
+            <AnimatedDragon size="small" className="top-0 right-10" />
+          </div>
           <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-chinese-red to-chinese-gold bg-clip-text text-transparent">
             Облака Китая
           </h1>
@@ -107,14 +184,23 @@ const Index = () => {
             <p className="text-xl text-gray-300 mb-8">Изысканные блюда китайской кухни</p>
             <div className="flex flex-wrap justify-center gap-4 mb-8">
               {['Все', 'Основные блюда', 'Закуски', 'Лапша', 'Рис', 'Напитки'].map((category) => (
-                <Badge key={category} variant="outline" className="border-chinese-gold text-chinese-gold hover:bg-chinese-gold hover:text-black cursor-pointer">
+                <Badge 
+                  key={category} 
+                  variant="outline" 
+                  className={`border-chinese-gold cursor-pointer transition-all duration-300 ${
+                    selectedCategory === category 
+                      ? 'bg-chinese-gold text-black' 
+                      : 'text-chinese-gold hover:bg-chinese-gold hover:text-black'
+                  }`}
+                  onClick={() => setSelectedCategory(category)}
+                >
                   {category}
                 </Badge>
               ))}
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {menuItems.map((item, index) => (
+            {filteredMenuItems.map((item, index) => (
               <Card key={index} className="bg-chinese-black/70 border-chinese-red/30 hover:border-chinese-gold/50 transition-all duration-300 hover:scale-105 animate-fade-in">
                 <CardHeader className="p-0">
                   <img src={item.image} alt={item.name} className="w-full h-48 object-cover rounded-t-lg" />
@@ -127,7 +213,10 @@ const Index = () => {
                   <CardDescription className="text-gray-300 mb-4">{item.description}</CardDescription>
                   <div className="flex justify-between items-center">
                     <span className="text-2xl font-bold text-chinese-gold">{item.price}</span>
-                    <Button className="bg-chinese-red hover:bg-chinese-red/80 text-white">
+                    <Button 
+                      className="bg-chinese-red hover:bg-chinese-red/80 text-white transition-transform hover:scale-105"
+                      onClick={() => addToCart(item)}
+                    >
                       <Icon name="Plus" size={16} className="mr-2" />
                       В корзину
                     </Button>
@@ -175,6 +264,7 @@ const Index = () => {
                 className="rounded-lg shadow-2xl animate-float"
               />
               <div className="absolute -top-4 -right-4 text-6xl animate-float">🏮</div>
+              <AnimatedDragon size="medium" className="top-10 right-20" />
             </div>
           </div>
         </div>
@@ -220,21 +310,7 @@ const Index = () => {
             <h2 className="text-4xl font-bold mb-4 text-chinese-gold">Галерея</h2>
             <p className="text-xl text-gray-300">Атмосфера нашего ресторана</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              '/img/795b2b07-b5cb-4fd9-8173-57cf4277880f.jpg',
-              '/img/0c431847-b69b-4038-a808-47714b4e6c17.jpg',
-              '/img/67a335d2-f54d-48fb-9229-c4a3ff55345d.jpg',
-              '/img/795b2b07-b5cb-4fd9-8173-57cf4277880f.jpg',
-              '/img/0c431847-b69b-4038-a808-47714b4e6c17.jpg',
-              '/img/67a335d2-f54d-48fb-9229-c4a3ff55345d.jpg'
-            ].map((image, index) => (
-              <div key={index} className="relative group overflow-hidden rounded-lg hover:scale-105 transition-transform duration-300">
-                <img src={image} alt={`Gallery ${index + 1}`} className="w-full h-64 object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              </div>
-            ))}
-          </div>
+          <ImageGallery images={galleryImages} />
         </div>
       </section>
 
@@ -421,6 +497,14 @@ const Index = () => {
           </div>
         </div>
       </footer>
+
+      <CartSidebar 
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        items={cartItems}
+        onUpdateQuantity={updateCartQuantity}
+        onRemoveItem={removeFromCart}
+      />
     </div>
   );
 };
